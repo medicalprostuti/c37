@@ -1,0 +1,1286 @@
+<!DOCTYPE html>
+<html lang="bn">
+  <head>
+    <script>
+      document.addEventListener("contextmenu", (event) =>
+        event.preventDefault()
+      );
+      document.addEventListener("keydown", (event) => {
+        if (
+          (event.ctrlKey &&
+            ["u", "s", "i", "j"].includes(event.key.toLowerCase())) ||
+          event.key === "F12"
+        ) {
+          event.preventDefault();
+        }
+      });
+    </script>
+
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Online Exam</title>
+    <!-- Chart.js CDN -->
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&display=swap");
+
+      body {
+        font-family: "Hind Siliguri", sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f4f4f4;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+      }
+
+      .container {
+        font-family: "Hind Siliguri", sans-serif;
+        width: 100%;
+        margin: auto;
+        background-color: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        min-height: 80vh;
+      }
+
+      .exam-content {
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      h1 {
+        color: #1b0b54;
+        text-align: center;
+        margin-bottom: 10px;
+      }
+
+      #timer {
+        font-size: 20px;
+        color: #1b0b54;
+        margin-bottom: 5px;
+        font-weight: normal;
+        text-align: center;
+      }
+
+      #exam-info {
+        font-size: 16px;
+        color: black;
+        margin-bottom: 20px;
+        text-align: center;
+      }
+
+      #exam {
+        width: 100%;
+        min-height: 100px;
+      }
+
+      .chart-container {
+        width: 200px;
+        height: 200px;
+        margin: 10px auto;
+        background-color: #f9f9f9;
+        border-radius: 15px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        display: none;
+        padding: 10px;
+      }
+
+      .chart-container.visible {
+        display: block;
+      }
+
+      .question-container {
+        text-align: left;
+        margin-bottom: 20px;
+        display: block;
+      }
+
+      .question-label {
+        font-weight: bold;
+        color: #1b0b54;
+        margin-bottom: 10px;
+      }
+
+      .options {
+        margin-top: 10px;
+      }
+
+      .option {
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        padding: 5px;
+        border-radius: 5px;
+        text-transform: uppercase;
+      }
+
+      .circle {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        border: 2px solid #1b0b54;
+        margin-right: 10px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: #1b0b54;
+        font-weight: bold;
+        font-size: 18px;
+      }
+
+      .selected .circle {
+        background-color: #1b0b54;
+        color: white;
+      }
+
+      .correct-text {
+        color: green !important;
+      }
+
+      .incorrect-text {
+        color: #ff0800 !important;
+      }
+
+      .unattempted-text {
+        color: orange !important;
+      }
+
+      #submitBtn {
+        font-family: hind siliguri;
+        padding: 15px 30px;
+        background-color: #1b0b54;
+        color: white;
+        border: none;
+        cursor: pointer;
+        font-size: 18px;
+        font-weight: bold;
+        border-radius: 10px;
+        margin-top: 20px;
+        width: 200px;
+        transition: background-color 0.3s ease;
+      }
+
+      #submitBtn:hover {
+        background-color: #1b0b54;
+      }
+
+      .popup {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background-color: white;
+        padding: 20px;
+        width: 300px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        border-radius: 10px;
+        text-align: center;
+        display: none;
+        z-index: 1000;
+        transition: transform 0.5s ease, opacity 0.5s ease;
+      }
+
+      .popup.slide-out {
+        transform: translate(-50%, -100%);
+        opacity: 0;
+      }
+
+      .popup-header {
+        background-color: #1b0b54;
+        color: white;
+        padding: 10px;
+        font-size: 20px;
+        font-weight: bold;
+        border-radius: 10px 10px 0 0;
+      }
+
+      .popup-body {
+        padding: 15px;
+      }
+
+      .popup-body p {
+        margin: 10px 0;
+      }
+
+      .confirm-btn {
+        font-family: hind siliguri;
+        background-color: #34c759;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        border-radius: 5px;
+        margin: 5px;
+      }
+
+      .confirm-btn:hover {
+        background-color: #34c759;
+      }
+
+      .cancel-btn {
+        background-color: #ff3b30;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        border-radius: 5px;
+        margin: 5px;
+      }
+
+      .cancel-btn:hover {
+        background-color: #e02b21;
+      }
+
+      .explanation-dropdown {
+        display: none;
+        margin-top: 10px;
+      }
+
+      .explanation-dropdown.visible {
+        display: block;
+      }
+
+      .explanation-btn {
+        background-color: #1b0b54;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 14px;
+        font-family: "Hind Siliguri", sans-serif;
+        width: 40%;
+        text-align: left;
+        position: relative;
+      }
+
+      .explanation-btn:hover {
+        background-color: #1b0b54;
+      }
+
+      .explanation-btn::after {
+        content: "▼";
+        position: absolute;
+        right: 10px;
+        font-size: 12px;
+      }
+
+      .explanation-btn.active::after {
+        content: "▲";
+      }
+
+      .explanation-content {
+        display: none;
+        padding: 15px;
+        background-color: #f9f9f9;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        font-size: 14px;
+        color: #000000;
+        text-align: left;
+        max-height: 450px;
+        overflow-y: auto;
+        margin-top: 5px;
+      }
+
+      .explanation-content.visible {
+        display: block;
+      }
+
+      .explanation-content p {
+        margin: 0 0 10px 0;
+      }
+
+      .explanation-content ul {
+        margin: 0;
+        padding-left: 20px;
+      }
+
+      .explanation-content li {
+        margin-bottom: 5px;
+      }
+
+      .explanation-content strong {
+        color: #1b0b54;
+      }
+
+      .explanation-label {
+        font-weight: bold;
+        color: #1b0b54;
+        margin-bottom: 10px;
+        display: block;
+      }
+
+      .locked .option {
+        pointer-events: none;
+        cursor: default;
+      }
+
+      .locked .option.selected {
+        pointer-events: none;
+        cursor: default;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container" id="examContainer">
+      <div class="exam-content">
+        <h1>কেমিস্ট্রি ১ম অনুশীলন</h1>
+        <div id="timer"></div>
+        <div id="exam-info"></div>
+        <div class="chart-container">
+          <canvas id="scoreChart"></canvas>
+        </div>
+        <div id="exam">
+          <!-- Questions will be generated dynamically -->
+        </div>
+        <button id="submitBtn">সাবমিট</button>
+      </div>
+    </div>
+
+    <div class="popup" id="scorePopup">
+      <div class="popup-header">তোমার স্কোর</div>
+      <div class="popup-body">
+        <p><strong>মোট প্রশ্ন:</strong> <span id="totalQuestions"></span></p>
+        <p>
+          <strong>উত্তর দিয়েছো:</strong>
+          <span style="color: #000000" id="answered"></span>
+        </p>
+        <p>
+          <strong>সঠিক উত্তর:</strong>
+          <span style="color: #0ab853" id="correctAnswers"></span>
+        </p>
+        <p>
+          <strong>ভুল উত্তর:</strong>
+          <span style="color: #f81010" id="wrongAnswers"></span>
+        </p>
+        <p>
+          <strong>অনুত্তরিত:</strong>
+          <span style="color: #ffc801" id="unanswered"></span>
+        </p>
+        <p><strong>তোমার চূড়ান্ত স্কোর:</strong></p>
+        <h2 style="color: #1b0b54"><span id="finalScore"></span></h2>
+        <form id="scoreForm" action="https://formspree.io/f/xpby" method="POST">
+          <input type="hidden" name="userID" id="formUserID" />
+          <input type="hidden" name="finalScore" id="formFinalScore" />
+          <input type="hidden" name="correctAnswers" id="formCorrectAnswers" />
+          <input type="hidden" name="wrongAnswers" id="formWrongAnswers" />
+          <input type="hidden" name="unanswered" id="formUnanswered" />
+          <button
+            type="submit"
+            class="confirm-btn"
+            style="background-color: #1b0b54"
+          >
+            <b>ওকে</b>
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <div class="popup" id="confirmPopup">
+      <div class="popup-header">কনফার্ম করো</div>
+      <div class="popup-body">
+        <p>
+          ভালো করে দেখে নাও! <br />
+          পরীক্ষা শেষ করতে চাও তো?
+        </p>
+        <button class="confirm-btn" onclick="confirmSubmit()">
+          <b>হ্যাঁ</b>
+        </button>
+        <button class="cancel-btn" onclick="cancelSubmit()"><b>না</b></button>
+      </div>
+    </div>
+
+    <script>
+      let chartInstance = null;
+
+      document.addEventListener("DOMContentLoaded", function () {
+        console.log("DOM fully loaded and parsed");
+        const examContainer = document.getElementById("examContainer");
+        if (!examContainer) {
+          console.error("Exam container not found!");
+          return;
+        }
+        try {
+          sessionStorage.setItem("isLoggedIn", "true");
+          sessionStorage.setItem("userID", "anonymous");
+          console.log(
+            "Session storage set: isLoggedIn = true, userID = anonymous"
+          );
+        } catch (e) {
+          console.error("Session storage error:", e);
+        }
+        examContainer.style.display = "block";
+        console.log("Exam container displayed");
+        startTimer();
+        generateQuestions();
+
+        window.addEventListener("beforeunload", function (event) {
+          if (
+            examContainer.style.display === "block" &&
+            sessionStorage.getItem("isLoggedIn") === "true"
+          ) {
+            autoSubmitScore();
+          }
+        });
+      });
+
+      const questions = [
+        {
+          id: 1,
+          question: "নিচের কোনটি বিক্রিয়া হারের একক?",
+          options: {
+            A: "mol L⁻¹s⁻¹",
+            B: "mol Ls⁻¹",
+            C: "mol L⁻¹s",
+            D: "mol⁻¹ L⁻¹s⁻¹",
+          },
+          correct: "A",
+          explanation:
+            "<p>বিক্রিয়ার হার হলো প্রতি একক সময়ে বিক্রিয়ক বা উৎপাদের ঘনমাত্রার পরিবর্তন। ঘনমাত্রার একক হলো mol L⁻¹ (মোল প্রতি লিটার) এবং সময়ের একক হলো সেকেন্ড (s)। সুতরাং, বিক্রিয়া হারের একক হলো ঘনমাত্রার একক / সময়ের একক = (mol L⁻¹) / s = mol L⁻¹s⁻¹। এটি রাসায়নিক গতিবিজ্ঞানে বিক্রিয়ার গতি পরিমাপের একটি সাধারণ একক।</p>",
+        },
+        {
+          id: 2,
+          question: "তাপমাত্রার সাথে বিক্রিয়ার হারের সম্পর্ক কিরূপ?",
+          options: {
+            A: "ব্যস্তানুপাতিক",
+            B: "সমানুপাতিক",
+            C: "পরাবৃত্তীয়",
+            D: "অধিবৃত্তীয়",
+          },
+          correct: "B",
+          explanation:
+            "<p>তাপমাত্রা বাড়লে সাধারণত বিক্রিয়ার হার বাড়ে, অর্থাৎ তাপমাত্রা ও বিক্রিয়ার হার সমানুপাতিক। এর কারণ হলো তাপমাত্রা বৃদ্ধিতে অণুগুলোর গতিশক্তি বৃদ্ধি পায়, ফলে তাদের মধ্যে সংঘর্ষের হার বাড়ে এবং সক্রিয়করণ শক্তি অতিক্রম করার মতো পর্যাপ্ত শক্তি সম্পন্ন অণুর সংখ্যা বৃদ্ধি পায়। আর্হেনিয়াস সমীকরণ দ্বারা এই সম্পর্কটি ব্যাখ্যা করা হয়।</p>",
+        },
+        {
+          id: 3,
+          question: "প্রতিক্রিয়ার অ্যাক্টিভেশন শক্তি নির্ধারণে কোনটি কার্যত?",
+          options: {
+            A: "তাপমাত্রা",
+            B: "বিক্রিয়ার প্রকৃতি",
+            C: "Temperature",
+            D: "Collision rate",
+          },
+          correct: "A",
+          explanation:
+            "<p>প্রতিক্রিয়ার অ্যাক্টিভেশন শক্তি (সক্রিয়করণ শক্তি) নির্ধারণে তাপমাত্রা একটি গুরুত্বপূর্ণ নিয়ামক। যদিও সক্রিয়করণ শক্তি বিক্রিয়কের প্রকৃতির উপর নির্ভর করে একটি নির্দিষ্ট বিক্রিয়ার জন্য স্থির থাকে, তবে তাপমাত্রা পরিবর্তনের মাধ্যমে বিক্রিয়ার হার পরিবর্তিত হয়, যা থেকে সক্রিয়করণ শক্তি নির্ণয় করা সম্ভব। আর্হেনিয়াস সমীকরণ এই সম্পর্ককে প্রতিষ্ঠা করে, যেখানে তাপমাত্রা বৃদ্ধির সাথে সাথে সক্রিয়করণ শক্তি অতিক্রমকারী অণুর সংখ্যা বৃদ্ধি পায়।</p>",
+        },
+        {
+          id: 4,
+          question: "আলোর প্রভাবে যে বিক্রিয়াটি সংঘটিত হয়-",
+          options: {
+            A: "H₂ + Cl₂ = 2HCl",
+            B: "H₂ + I₂ = 2HI",
+            C: "H₂ + F₂ = 2HF",
+            D: "H₂ + Br₂ = 2HBr",
+          },
+          correct: "A",
+          explanation:
+            "<p>হাইড্রোজেন (H₂) এবং ক্লোরিন (Cl₂) এর মধ্যে বিক্রিয়া আলোর উপস্থিতিতে (বিশেষ করে সূর্যের আলো বা অতিবেগুনি রশ্মি) দ্রুত সংঘটিত হয় এবং হাইড্রোজেন ক্লোরাইড (HCl) উৎপন্ন করে। এই বিক্রিয়াটি একটি আলোক-রাসায়নিক বিক্রিয়া (photochemical reaction) বা ফ্রি র‍্যাডিক্যাল চেইন বিক্রিয়ার (free radical chain reaction) উদাহরণ। অন্যান্য বিক্রিয়াগুলোও সংঘটিত হয়, তবে H₂ + Cl₂ বিক্রিয়াটি আলোর প্রভাবে বিশেষভাবে ত্বরান্বিত হয়।</p>",
+        },
+        {
+          id: 5,
+          question:
+            "বিক্রিয়ার হারের উপর প্রভাব বিস্তারকারী নিম্নের কোন নিয়ামকটি সঠিক নয়?",
+          options: {
+            A: "উচ্চ তাপমাত্রা",
+            B: "নিম্ন চাপ",
+            C: "প্রভাবক",
+            D: "আলোর অনুপস্থিতি",
+          },
+          correct: "D",
+          explanation:
+            "<p>আলোর অনুপস্থিতি বিক্রিয়ার হারের উপর প্রভাব বিস্তারকারী সঠিক নিয়ামক নয়। প্রকৃতপক্ষে, কিছু বিক্রিয়া আলোর উপস্থিতিতে ত্বরান্বিত হয় (যেমন আলোক-রাসায়নিক বিক্রিয়া)। উচ্চ তাপমাত্রা, নিম্ন চাপ (যদি বিক্রিয়ক গ্যাসীয় হয় এবং আয়তন বৃদ্ধি পায়) এবং প্রভাবক সবই বিক্রিয়ার হারের উপর প্রভাব ফেলে। উচ্চ তাপমাত্রা সাধারণত বিক্রিয়ার হার বাড়ায়, নিম্ন চাপ কিছু বিক্রিয়ার হার কমায়, এবং প্রভাবক বিক্রিয়ার হার পরিবর্তন করে (সাধারণত বাড়ায়)।</p>",
+        },
+        {
+          id: 6,
+          question: "বিক্রিয়ার বেগ হ্রাসের জন্য কোন তথ্যটি সঠিক?",
+          options: {
+            A: "বিক্রিয়ক ঘনমাত্রা",
+            B: "বিক্রিয়ার গতির হার",
+            C: "উভয়ের",
+            D: "কোনোটিই নয়",
+          },
+          correct: "B",
+          explanation:
+            "<p>একটি রাসায়নিক বিক্রিয়ার বেগ হ্রাস মানে হলো বিক্রিয়ার গতির হার কমে যাওয়া। বিক্রিয়ার গতি (বেগ) হলো প্রতি একক সময়ে বিক্রিয়ক বা উৎপাদের ঘনমাত্রার পরিবর্তন। যদি বিক্রিয়ার বেগ হ্রাস পায়, তাহলে এর মানে হলো বিক্রিয়ার গতির হার কমে গেছে। বিক্রিয়ক ঘনমাত্রা এবং বিক্রিয়ার গতির হার একে অপরের সাথে সম্পর্কিত, কিন্তু সরাসরি 'বিক্রিয়ার বেগ হ্রাসের জন্য সঠিক তথ্য' হিসেবে বিক্রিয়ার গতির হারকেই বোঝানো হয়।</p>",
+        },
+        {
+          id: 7,
+          question:
+            "কোন বিক্রিয়ার আপেক্ষিক বেগ ধ্রুবক নিম্নের কোনটির পরিমাপক?",
+          options: {
+            A: "বিক্রিয়ক ঘনমাত্রা",
+            B: "বিক্রিয়ার গতির হার",
+            C: "উভয়ের",
+            D: "কোনোটিই নয়",
+          },
+          correct: "B",
+          explanation:
+            "<p>কোনো বিক্রিয়ার আপেক্ষিক বেগ ধ্রুবক (rate constant, k) হলো বিক্রিয়ার গতির হারের একটি পরিমাপক যখন বিক্রিয়কগুলোর ঘনমাত্রা ১ mol/L হয়। এটি একটি নির্দিষ্ট তাপমাত্রায় বিক্রিয়ার সহজাত গতিকে নির্দেশ করে। এটি বিক্রিয়ক ঘনমাত্রার উপর নির্ভরশীল নয়, বরং তাপমাত্রা এবং প্রভাবকের উপর নির্ভর করে। তাই, এটি সরাসরি বিক্রিয়ার গতির হারকে পরিমাপ করে।</p>",
+        },
+        {
+          id: 8,
+          question:
+            "প্রথম ক্রমের বিক্রিয়ার হার ধ্রুবকের মান নিচের কোনটির ওপর নির্ভরশীল নয়?",
+          options: {
+            A: "তাপমাত্রা",
+            B: "বিক্রিয়ার অর্ধায়ু",
+            C: "প্রভাবক",
+            D: "বিক্রিয়কের ঘনমাত্রা",
+          },
+          correct: "D",
+          explanation:
+            "<p>প্রথম ক্রমের বিক্রিয়ার হার ধ্রুবক (k) বিক্রিয়কের ঘনমাত্রার উপর নির্ভরশীল নয়। হার ধ্রুবকের মান তাপমাত্রা, প্রভাবকের উপস্থিতি এবং বিক্রিয়কের প্রকৃতির উপর নির্ভরশীল। প্রথম ক্রমের বিক্রিয়ার ক্ষেত্রে, বিক্রিয়ার অর্ধায়ু (t<sub>1/2</sub>) হার ধ্রুবকের ব্যস্তানুপাতিক (t<sub>1/2</sub> = ln2 / k), তাই এটি হার ধ্রুবকের উপর নির্ভরশীল।</p>",
+        },
+        {
+          id: 9,
+          question: "কোন বিক্রিয়ার হার সবচেয়ে বেশি?",
+          options: {
+            A: "CH₄ + Cl₂ → CH₃Cl + HCl",
+            B: "Na⁺ + Cl⁻ → NaCl",
+            C: "Mg + O₂ → MgO",
+            D: "CuSO₄·5H₂O → CuSO₄ + 5H₂O",
+          },
+          correct: "B",
+          explanation:
+            "<p>আয়নিক বিক্রিয়াগুলো সাধারণত অত্যন্ত দ্রুত হয়। Na⁺ এবং Cl⁻ এর মধ্যে বিক্রিয়াটি আয়নিক এবং এটি দ্রবীভূত অবস্থায় প্রায় তাৎক্ষণিকভাবে সংঘটিত হয়, কারণ আয়নগুলো দ্রুত গতিতে পরস্পরের সাথে আকর্ষণ করে যৌগ গঠন করে। অন্যান্য বিক্রিয়াগুলো (যেমন জৈব বিক্রিয়া, ধাতু-অক্সিজেন বিক্রিয়া, বা বিয়োজন বিক্রিয়া) সাধারণত ধীর গতিতে সংঘটিত হয়।</p>",
+        },
+        {
+          id: 10,
+          question:
+            "বিভিন্ন বিক্রিয়ার সক্রিয়ণ শক্তি দেয়া হলো। কোন বিক্রিয়াটির গতির হার সর্বোচ্চ?",
+          options: {
+            A: "1.32 kJ mol⁻¹",
+            B: "2.31 kJ mol⁻¹",
+            C: "1.02 kJ mol⁻¹",
+            D: "0.5 × 10⁻² kJ mol⁻¹",
+          },
+          correct: "D",
+          explanation:
+            "<p>একটি রাসায়নিক বিক্রিয়ার গতির হার সক্রিয়ণ শক্তির ব্যস্তানুপাতিক। অর্থাৎ, সক্রিয়ণ শক্তি যত কম হবে, বিক্রিয়া তত দ্রুত হবে। প্রদত্ত বিকল্পগুলোর মধ্যে, 0.5 × 10⁻² kJ mol⁻¹ = 0.005 kJ mol⁻¹ হলো সবচেয়ে কম সক্রিয়ণ শক্তি। তাই, এই বিক্রিয়াটির গতির হার সর্বোচ্চ হবে।</p>",
+        },
+        {
+          id: 11,
+          question: "একটি রাসায়নিক বিক্রিয়ার গতির হার কোনটি?",
+          options: {
+            A: "d(বিক্রিয়ক ঘনমাত্রা)/dt",
+            B: "-d(বিক্রিয়ক ঘনমাত্রা)/dt",
+            C: "d(উৎপাদের ঘনমাত্রা)/dt",
+            D: "d(উৎপাদকের ভর)/dt",
+          },
+          correct: "C",
+          explanation:
+            "<p>একটি রাসায়নিক বিক্রিয়ার গতির হার উৎপাদের ঘনমাত্রার পরিবর্তনের ধনাত্মক হার বা বিক্রিয়কের ঘনমাত্রার পরিবর্তনের ঋণাত্মক হার দ্বারা প্রকাশ করা হয়। সাধারণত, 'd(উৎপাদের ঘনমাত্রা)/dt' হলো উৎপাদের ঘনমাত্রা বৃদ্ধি বনাম সময়ের পরিবর্তন, যা বিক্রিয়ার হারকে সরাসরি নির্দেশ করে। ' -d(বিক্রিয়ক ঘনমাত্রা)/dt' দ্বারাও হার প্রকাশ করা হয়, তবে এটি বিক্রিয়কের ঘনমাত্রার হ্রাস নির্দেশ করে।</p>",
+        },
+        {
+          id: 12,
+          question: "দ্বিতীয় ক্রম বিক্রিয়ার হার ধ্রুবকের একক কী?",
+          options: {
+            A: "mol L⁻¹s⁻¹",
+            B: "s⁻¹",
+            C: "L mol⁻¹s⁻¹",
+            D: "mol L⁻¹",
+          },
+          correct: "C",
+          explanation:
+            "<p>দ্বিতীয় ক্রম বিক্রিয়ার হার সমীকরণ হলো হার = k[A]² বা হার = k[A][B]। আমরা জানি, হারের একক হলো mol L⁻¹s⁻¹। অতএব, k এর একক = হার / (ঘনমাত্রা)² = (mol L⁻¹s⁻¹) / (mol L⁻¹)² = (mol L⁻¹s⁻¹) / (mol² L⁻²) = L mol⁻¹s⁻¹।</p>",
+        },
+        {
+          id: 13,
+          question: "কোনটি প্রথম ক্রম বিক্রিয়ার জন্য প্রযোজ্য?",
+          options: {
+            A: "k এর একক s⁻¹",
+            B: "k এর একক L mol⁻¹s⁻²",
+            C: "k = 1/ka",
+            D: "k = x/ta(a-x)",
+          },
+          correct: "A",
+          explanation:
+            "<p>প্রথম ক্রম বিক্রিয়ার হার সমীকরণ হলো হার = k[A]। আমরা জানি, হারের একক হলো mol L⁻¹s⁻¹ এবং ঘনমাত্রার একক হলো mol L⁻¹। সুতরাং, k এর একক = হার / ঘনমাত্রা = (mol L⁻¹s⁻¹) / (mol L⁻¹) = s⁻¹। বিকল্প (B) দ্বিতীয় ক্রম বিক্রিয়ার একক। বিকল্প (C) এবং (D) সাধারণত হার ধ্রুবকের সমীকরণ নয়।</p>",
+        },
+        {
+          id: 14,
+          question: "কোন বিক্রিয়াটির সক্রিয়ণ শক্তি সবচেয়ে কম?",
+          options: {
+            A: "Fe + O₂ + H₂O → Fe₂O₃·3H₂O (মরিচা)",
+            B: "HCl + NaOH → NaCl + H₂O",
+            C: "N₂ + 3H₂ → 2NH₃",
+            D: "AlCl₃ + 3H₂O → Al(OH)₃ + HCl",
+          },
+          correct: "B",
+          explanation:
+            "<p>অ্যাসিড-ক্ষার প্রশমন বিক্রিয়া (যেমন HCl + NaOH → NaCl + H₂O) সাধারণত খুব দ্রুত হয় এবং এর জন্য খুব কম সক্রিয়ণ শক্তির প্রয়োজন হয়। কারণ এই বিক্রিয়ায় আয়নিক বন্ধন গঠিত হয় এবং বিক্রিয়ক অণুগুলোর মধ্যে খুব দ্রুত সংঘর্ষ হয়। মরিচা পড়া একটি ধীর প্রক্রিয়া, অ্যামোনিয়া সংশ্লেষণ (হ্যাবার-বশ প্রক্রিয়া) উচ্চ তাপমাত্রা ও চাপ প্রয়োজন হয়, এবং অ্যালুমিনিয়াম ক্লোরাইডের হাইড্রোলাইসিসও তুলনামূলকভাবে কম দ্রুত।</p>",
+        },
+        {
+          id: 15,
+          question:
+            "NO₂ (g) + CO (g) → NO (g) + CO₂ (g) এক্ষেত্রে [CO]° বিক্রিয়াটির ক্রম কত?",
+          options: {
+            A: "0",
+            B: "1.0",
+            C: "1.5",
+            D: "2.0",
+          },
+          correct: "A",
+          explanation:
+            "<p>NO₂ (g) + CO (g) → NO (g) + CO₂ (g) বিক্রিয়ার হার সাধারণত দ্বিতীয় ক্রমের হয় NO₂ এর সাপেক্ষে, কিন্তু CO এর সাপেক্ষে এটি শূন্য ক্রমের হয় যখন CO এর ঘনমাত্রা অনেক বেশি থাকে। অর্থাৎ, এই বিক্রিয়ায় CO এর ঘনমাত্রা বাড়ালেও বিক্রিয়ার হারে কোনো পরিবর্তন হয় না। এই বিক্রিয়াটি একটি জটিল বিক্রিয়া এবং এর হার সমীকরণ তাপমাত্রার উপর নির্ভর করে পরিবর্তিত হতে পারে। উচ্চ তাপমাত্রায়, বিক্রিয়ার হার = k[NO₂]²। তবে যদি CO এর ঘনমাত্রা অতিরিক্ত পরিমাণে থাকে, তাহলে CO এর সাপেক্ষে বিক্রিয়ার ক্রম শূন্য হয়।</p>",
+        },
+        {
+          id: 16,
+          question: "তাপোৎপাদী বিক্রিয়ায় -",
+          options: {
+            A: "অভ্যন্তরীণ শক্তির বৃদ্ধি ঘটে",
+            B: "অভ্যন্তরীণ শক্তির হ্রাস ঘটে",
+            C: "অভ্যন্তরীণ শক্তি অপরিবর্তিত থাকে",
+            D: "তাপ উৎপাদী বিক্রিয়ার সঙ্গে অভ্যন্তরীণ শক্তির কোনো সম্পর্ক নেই",
+          },
+          correct: "B",
+          explanation:
+            "<p>তাপোৎপাদী বিক্রিয়ায় (exothermic reaction) তাপ শক্তি পরিবেশে নির্গত হয়। এর ফলে বিক্রিয়কের মোট অভ্যন্তরীণ শক্তি উৎপাদের মোট অভ্যন্তরীণ শক্তির চেয়ে বেশি হয়। যখন বিক্রিয়াটি ঘটে, তখন সিস্টেমে শক্তি হ্রাস পায়, যা পরিবেশে তাপ হিসেবে নির্গত হয়। তাই, তাপোৎপাদী বিক্রিয়ায় অভ্যন্তরীণ শক্তির হ্রাস ঘটে।</p>",
+        },
+        {
+          id: 17,
+          question: "তাপোৎপাদী বিক্রিয়ায় -",
+          options: {
+            A: "উৎপাদের মোট এনথালপি < বিক্রিয়কের মোট এনথালপি",
+            B: "উৎপাদের মোট এনথালপি > বিক্রিয়কের মোট এনথালপি",
+            C: "উৎপাদের মোট এনথালপি = বিক্রিয়কের মোট এনথালপি",
+            D: "এনথালপির পরিবর্তন ধনাত্মক হয়",
+          },
+          correct: "A",
+          explanation:
+            "<p>তাপোৎপাদী বিক্রিয়ায় (exothermic reaction) তাপ পরিবেশে নির্গত হয়, অর্থাৎ বিক্রিয়ার ফলে সিস্টেমের এনথালপি কমে যায়। এর অর্থ হলো উৎপাদগুলির মোট এনথালপি বিক্রিয়কগুলির মোট এনথালপির চেয়ে কম হয়। এনথালপির পরিবর্তন (ΔH) ঋণাত্মক হয় (ΔH < 0)।</p>",
+        },
+        {
+          id: 18,
+          question: "রাসায়নিক বিক্রিয়ার হার নির্ভর করে-",
+          options: {
+            A: "বিক্রিয়কের ঘনমাত্রা",
+            B: "চৌম্বক শক্তি",
+            C: "বৈদ্যুতিক শক্তি",
+            D: "কোনোটিই নয়",
+          },
+          correct: "A",
+          explanation:
+            "<p>রাসায়নিক বিক্রিয়ার হার মূলত বিক্রিয়কের ঘনমাত্রার উপর নির্ভরশীল। বিক্রিয়কের ঘনমাত্রা বাড়লে অণুগুলোর সংঘর্ষের সম্ভাবনা বাড়ে, ফলে বিক্রিয়ার হারও বাড়ে। এছাড়া, তাপমাত্রা, চাপ (গ্যাসীয় বিক্রিয়ার ক্ষেত্রে), পৃষ্ঠতল, এবং প্রভাবকও বিক্রিয়ার হারের উপর প্রভাব ফেলে। চৌম্বক শক্তি বা বৈদ্যুতিক শক্তি সরাসরি বেশিরভাগ রাসায়নিক বিক্রিয়ার হারকে প্রভাবিত করে না, যদিও কিছু বিশেষ ক্ষেত্রে তাদের প্রভাব থাকতে পারে।</p>",
+        },
+        {
+          id: 19,
+          question:
+            "aA + bB → cC + dD বিক্রিয়াটির ক্ষেত্রে কোনটি বিক্রিয়ার হার নির্দেশ করে?",
+          options: {
+            A: "-d[A]/dt",
+            B: "-d[B]/dt",
+            C: "1/c d[C]/dt",
+            D: "1/d d[D]/dt",
+          },
+          correct: "D",
+          explanation:
+            "<p>একটি সাধারণ বিক্রিয়া aA + bB → cC + dD এর জন্য বিক্রিয়ার হারকে বিভিন্নভাবে প্রকাশ করা যেতে পারে। বিক্রিয়ক A এর সাপেক্ষে হার হল -1/a d[A]/dt, এবং বিক্রিয়ক B এর সাপেক্ষে হার হল -1/b d[B]/dt। একইভাবে, উৎপাদ C এর সাপেক্ষে হার হল +1/c d[C]/dt, এবং উৎপাদ D এর সাপেক্ষে হার হল +1/d d[D]/dt। এই সবগুলোই একই বিক্রিয়ার হারকে নির্দেশ করে। প্রদত্ত বিকল্পগুলোর মধ্যে, 1/d d[D]/dt একটি সঠিক প্রকাশ।</p>",
+        },
+        {
+          id: 20,
+          question:
+            "প্রতি একক সময়ে কোনো রাসায়নিক বিক্রিয়া যতটুকু সম্পন্ন হয়, তাকে ঐ বিক্রিয়ার-",
+          options: {
+            A: "হার বলে",
+            B: "ধ্রুবক বলে",
+            C: "হার ধ্রুবক বলে",
+            D: "কোনোটিই নয়",
+          },
+          correct: "A",
+          explanation:
+            "<p>প্রতি একক সময়ে কোনো রাসায়নিক বিক্রিয়া যতটুকু সম্পন্ন হয়, তাকে ঐ বিক্রিয়ার হার বা গতি বলে। এটি বিক্রিয়ক বা উৎপাদের ঘনমাত্রার পরিবর্তনের হারকে নির্দেশ করে। হার ধ্রুবক (rate constant) একটি নির্দিষ্ট তাপমাত্রায় বিক্রিয়ার গতির একটি পরিমাপক, কিন্তু এটি সরাসরি 'সম্পন্ন হওয়া পরিমাণ'কে বোঝায় না।</p>",
+        },
+        {
+          id: 21,
+          question:
+            "কোনটি A + 2B → P বিক্রিয়াটির সঠিক হার সমীকরণ নির্দেশ করে?",
+          options: {
+            A: "-d[A]/dt = k[A][B]",
+            B: "-d[B]/dt = k[A][B]",
+            C: "d[P]/dt = k[P]/[A]",
+            D: "d[P]/dt = k[A]²[B]²",
+          },
+          correct: "A",
+          explanation:
+            "<p>বিক্রিয়া A + 2B → P এর জন্য হার সমীকরণ হার = k[A]<sup>x</sup>[B]<sup>y</sup> আকারে লেখা হয়, যেখানে x এবং y বিক্রিয়ার ক্রম। যদি বিক্রিয়াটি মৌলিক হয়, তাহলে x=1 এবং y=2 হতে পারে। তবে, হার সমীকরণটি পরীক্ষা দ্বারা নির্ধারিত হয়। বিকল্প (A) তে, -d[A]/dt হলো বিক্রিয়ক A এর ঘনমাত্রা হ্রাসের হার। যদি বিক্রিয়াটি A এবং B এর সাপেক্ষে প্রথম ক্রমের হয়, তাহলে হার = k[A][B] হবে। তবে, এই প্রশ্নের প্রেক্ষিতে, যদি হার সমীকরণটি মৌলিক বিক্রিয়ার মতো হয়, তাহলে -d[A]/dt = k[A][B] সম্ভাব্য সঠিক হতে পারে, কারণ প্রায়শই একটি বিক্রিয়কের ঘনমাত্রা পরিবর্তনের হারকে সামগ্রিক হারের সাথে সমানুপাতিক ধরে নেওয়া হয়। (উল্লেখ্য: এখানে [B] এর ঘাত 1 ধরা হয়েছে, যা প্রশ্ন থেকে সরাসরি বলা হয়নি, কিন্তু বিকল্পগুলোর মধ্যে এটি সবচেয়ে সাধারণ এবং যৌক্তিক ধরে নেওয়া হয়েছে)।</p>",
+        },
+        {
+          id: 22,
+          question: "N₂O₄ → 2NO₂ এর ক্ষেত্রে বিক্রিয়ার হার কোনটি?",
+          options: {
+            A: "-d[N₂O₄]/dt",
+            B: "+d[N₂O₄]/dt",
+            C: "+d[NO₂]/dt",
+            D: "1/2 d[NO₂]/dt",
+          },
+          correct: "A",
+          explanation:
+            "<p>N₂O₄ → 2NO₂ বিক্রিয়ার হারকে বিক্রিয়ক N₂O₄ এর ঘনমাত্রা হ্রাসের হার হিসেবে প্রকাশ করা হয়। এক্ষেত্রে, N₂O₄ এর ঘনমাত্রা সময় বৃদ্ধির সাথে সাথে কমে যায়, তাই এর পরিবর্তনের হার ঋণাত্মক হয়। এই কারণে, বিক্রিয়ার হারকে ধনাত্মক করার জন্য একটি ঋণাত্মক চিহ্ন (-d[N₂O₄]/dt) ব্যবহার করা হয়। বিকল্প (D) হলো উৎপাদ NO₂ এর সাপেক্ষে বিক্রিয়ার হার, কিন্তু সাধারণ প্রকাশে বিক্রিয়কের হার ব্যবহার করা হয়।</p>",
+        },
+        {
+          id: 23,
+          question: "শূন্য ক্রম বিক্রিয়ার হার ধ্রুবক k-এর মান হচ্ছে-",
+          options: {
+            A: "Ms⁻¹",
+            B: "M⁻¹",
+            C: "M⁻²",
+            D: "M",
+          },
+          correct: "A",
+          explanation:
+            "<p>শূন্য ক্রম বিক্রিয়ার হার সমীকরণ হলো হার = k[A]⁰ = k। যেহেতু হারের একক হলো mol L⁻¹s⁻¹ (বা Ms⁻¹), এবং শূন্য ক্রম বিক্রিয়ার ক্ষেত্রে হার ধ্রুবক (k) সরাসরি হারের সমান, তাই শূন্য ক্রম বিক্রিয়ার হার ধ্রুবকের একক হলো mol L⁻¹s⁻¹ বা Ms⁻¹। এখানে M দ্বারা ঘনমাত্রা (mol L⁻¹) বোঝানো হয়েছে।</p>",
+        },
+        {
+          id: 24,
+          question: "শূন্য ক্রম বিক্রিয়ার বেগ ধ্রুবকের একক কোনটি?",
+          options: {
+            A: "time⁻¹",
+            B: "mol time⁻¹",
+            C: "mol⁻¹ time⁻¹",
+            D: "mol L⁻¹ time⁻¹",
+          },
+          correct: "D",
+          explanation:
+            "<p>শূন্য ক্রম বিক্রিয়ার হার সমীকরণ হলো হার = k। আমরা জানি, হারের একক হলো mol L⁻¹ সময়⁻¹ (বা mol L⁻¹s⁻¹)। যেহেতু শূন্য ক্রম বিক্রিয়ার ক্ষেত্রে হার ধ্রুবক (k) সরাসরি হারের সমান, তাই শূন্য ক্রম বিক্রিয়ার বেগ ধ্রুবকের একক হলো mol L⁻¹ time⁻¹।</p>",
+        },
+        {
+          id: 25,
+          question: "দ্রাবক যোগ করলে বিক্রিয়ার-",
+          options: {
+            A: "সক্রিয়ণ শক্তি কমে যায়",
+            B: "বিক্রিয়া তাপ কমে যায়",
+            C: "সক্রিয়ণ শক্তি বেড়ে যায়",
+            D: "বিক্রিয়া তাপ বেড়ে যায়",
+          },
+          correct: "A",
+          explanation:
+            "<p>প্রভাবক (catalyst) যোগ করলে বিক্রিয়ার সক্রিয়ণ শক্তি কমে যায়, যার ফলে বিক্রিয়ার হার বৃদ্ধি পায়। দ্রাবক (solvent) এর ভূমিকা জটিল হতে পারে, তবে অনেক ক্ষেত্রে এটি বিক্রিয়ক অণুগুলির মধ্যে আকর্ষণ বা বিকর্ষণকে প্রভাবিত করে এবং বিক্রিয়ার সক্রিয়ণ শক্তিকে হ্রাস করতে পারে, ফলে বিক্রিয়ার হার বৃদ্ধি পায়। তবে, দ্রাবক সরাসরি বিক্রিয়া তাপ (এনথালপি পরিবর্তন) পরিবর্তন করে না।</p>",
+        },
+        {
+          id: 26,
+          question:
+            "কোনো বিক্রিয়ায় প্রয়োজনীয় সক্রিয়ণ শক্তি নির্ণয়ে মূলত কোনটি সহায়ক হবে?",
+          options: {
+            A: "তাপমাত্রা",
+            B: "বিক্রিয়ার প্রকৃতি",
+            C: "সংঘর্ষ হার",
+            D: "বিক্রিয়কের ঘনমাত্রা",
+          },
+          correct: "A",
+          explanation:
+            "<p>কোনো বিক্রিয়ায় প্রয়োজনীয় সক্রিয়ণ শক্তি নির্ণয়ে তাপমাত্রা মূলত সহায়ক হবে। আর্হেনিয়াস সমীকরণ (k = A e<sup>-Ea/RT</sup>) সক্রিয়ণ শক্তি (E<sub>a</sub>), তাপমাত্রা (T) এবং হার ধ্রুবক (k) এর মধ্যে সম্পর্ক স্থাপন করে। বিভিন্ন তাপমাত্রায় বিক্রিয়ার হার ধ্রুবক নির্ণয় করে লেখচিত্রের মাধ্যমে বা গাণিতিকভাবে সক্রিয়ণ শক্তি নির্ণয় করা সম্ভব। যদিও সক্রিয়ণ শক্তি বিক্রিয়ার প্রকৃতির উপর নির্ভরশীল, এটি সরাসরি নির্ণয় করা যায় না।</p>",
+        },
+        {
+          id: 27,
+          question: "নিচের কোনটি তাপোৎপাদী বিক্রিয়া সংঘটনের শর্ত?",
+          options: {
+            A: "বন্ধন তৈরিতে নির্গত শক্তি < বন্ধন ভাঙতে শোষিত শক্তি",
+            B: "বিক্রিয়কের অভ্যন্তরীণ শক্তি > উৎপাদের অভ্যন্তরীণ শক্তি",
+            C: "বিক্রিয়কের অভ্যন্তরীণ শক্তি < উৎপাদের অভ্যন্তরীণ শক্তি",
+            D: "বন্ধন তৈরিতে নির্গত শক্তি > বন্ধন ভাঙতে শোষিত শক্তি",
+          },
+          correct: "B",
+          explanation:
+            "<p>তাপোৎপাদী বিক্রিয়ায় (exothermic reaction) শক্তি পরিবেশে তাপ আকারে নির্গত হয়। এর মানে হলো, বিক্রিয়ার শুরুতে বিক্রিয়কগুলির মোট অভ্যন্তরীণ শক্তি উৎপাদগুলির মোট অভ্যন্তরীণ শক্তির চেয়ে বেশি থাকে। অর্থাৎ, বিক্রিয়কের শক্তি কমে উৎপাদ তৈরি হয় এবং সেই অতিরিক্ত শক্তি তাপ হিসেবে পরিবেশে চলে যায়। বিকল্প (D)ও তাপোৎপাদী বিক্রিয়ার একটি শর্ত, যেখানে নতুন বন্ধন তৈরিতে যে শক্তি নির্গত হয়, তা পুরাতন বন্ধন ভাঙতে শোষিত শক্তির চেয়ে বেশি হয়, ফলে মোট শক্তি পরিবেশে নির্গত হয়। তবে, বিকল্প (B) অভ্যন্তরীণ শক্তির ভারসাম্যের দিক থেকে একটি সঠিক শর্ত।</p>",
+        },
+      ];
+
+      const totalQuestions = questions.length;
+      let timeLeft = Math.floor(totalQuestions / 2) * 60;
+      const timerElement = document.getElementById("timer");
+      let timerInterval;
+
+      function updateTimer() {
+        const minutes = Math.floor(timeLeft / 60);
+        const seconds = timeLeft % 60;
+        timerElement.innerText = `${toBengaliNumber(
+          minutes
+        )} মিনিট ${toBengaliNumber(seconds)} সেকেন্ড`;
+
+        if (timeLeft > 0) {
+          timeLeft--;
+        } else {
+          stopTimer();
+          confirmSubmit();
+        }
+      }
+
+      function startTimer() {
+        console.log("Starting timer");
+        timerElement.innerText = `${toBengaliNumber(
+          Math.floor(timeLeft / 60)
+        )} মিনিট ${toBengaliNumber(timeLeft % 60)} সেকেন্ড`;
+        timerInterval = setInterval(updateTimer, 1000);
+      }
+
+      function stopTimer() {
+        clearInterval(timerInterval);
+        console.log("Timer stopped");
+      }
+
+      function toBengaliNumber(num) {
+        const bengaliDigits = [
+          "০",
+          "১",
+          "২",
+          "৩",
+          "৪",
+          "৫",
+          "৬",
+          "৭",
+          "৮",
+          "৯",
+        ];
+        let numStr = num.toString();
+
+        let isNegative = num < 0;
+        if (isNegative) {
+          numStr = numStr.substring(1);
+        }
+
+        if (numStr.includes(".")) {
+          let [integerPart, decimalPart] = numStr.split(".");
+          let integerBengali = integerPart
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          let decimalBengali = decimalPart
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          return (
+            (isNegative ? "−" : "") + integerBengali + "." + decimalBengali
+          );
+        } else {
+          let integerBengali = numStr
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          return (isNegative ? "−" : "") + integerBengali;
+        }
+      }
+
+      function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+      }
+
+      function generateQuestions() {
+        console.log("Generating questions");
+        const examContainer = document.querySelector("#exam");
+        if (!examContainer) {
+          console.error("Exam container (#exam) not found!");
+          return;
+        }
+        examContainer.innerHTML = "";
+        console.log("Questions array:", questions);
+        const shuffledQuestions = shuffleArray([...questions]);
+        shuffledQuestions.forEach((question, index) => {
+          console.log(`Generating question ${index + 1}:`, question);
+          const questionDiv = document.createElement("div");
+          questionDiv.classList.add("question-container");
+          questionDiv.setAttribute("data-question", question.id);
+          questionDiv.setAttribute("data-correct", question.correct);
+
+          let optionsHTML = "";
+          for (let option in question.options) {
+            optionsHTML += `
+                                            <label class="option" data-option="${option}">
+                                              <div class="circle">${option}</div>
+                                              <span class="option-text">${question.options[option]}</span>
+                                            </label>
+                                          `;
+          }
+
+          const explanationHTML = question.explanation
+            ? `<div class="explanation-dropdown">
+                                               <button class="explanation-btn">ব্যাখ্যা দেখো</button>
+                                               <div class="explanation-content">
+                                                 <div class="explanation-label">ব্যাখ্যা:</div>
+                                                 ${question.explanation}
+                                               </div>
+                                             </div>`
+            : "";
+
+          questionDiv.innerHTML = `
+                                          <p class="question-label">${
+                                            index + 1
+                                          }. ${question.question}</p>
+                                          <div class="options">
+                                            ${optionsHTML}
+                                          </div>
+                                          ${explanationHTML}
+                                        `;
+          examContainer.appendChild(questionDiv);
+          console.log(`Appended question ${index + 1} to exam container`);
+        });
+
+        const questionContainers = document.querySelectorAll(
+          ".question-container"
+        );
+        console.log(`Found ${questionContainers.length} question containers`);
+        questionContainers.forEach((container, idx) => {
+          console.log(`Setting question ${idx + 1} to visible`);
+          container.style.display = "block";
+        });
+
+        document.querySelectorAll(".option").forEach((option) => {
+          option.addEventListener(
+            "click",
+            function (e) {
+              e.preventDefault();
+              const parent = this.closest(".question-container");
+              if (parent.classList.contains("locked")) return;
+              parent.classList.add("locked");
+              parent.querySelectorAll(".option").forEach((el) => {
+                if (el !== this) {
+                  el.style.pointerEvents = "none";
+                  el.style.cursor = "default";
+                }
+                el.classList.remove("selected");
+              });
+              this.classList.add("selected");
+              console.log(
+                `Option selected for question ${parent.getAttribute(
+                  "data-question"
+                )}: ${this.getAttribute("data-option")}`
+              );
+            },
+            { once: true }
+          );
+        });
+
+        document.querySelectorAll(".explanation-btn").forEach((btn) => {
+          btn.addEventListener("click", function () {
+            const content = this.nextElementSibling;
+            content.classList.toggle("visible");
+            this.classList.toggle("active");
+            console.log("Toggled explanation visibility");
+          });
+        });
+
+        const examInfo = document.getElementById("exam-info");
+        if (examInfo) {
+          examInfo.innerText = `পূর্ণ নম্বরঃ ${toBengaliNumber(
+            totalQuestions
+          )}`;
+          console.log("Exam info updated");
+        } else {
+          console.error("Exam info element not found!");
+        }
+      }
+
+      function initializeChart() {
+        console.log("Initializing chart");
+        const ctx = document.getElementById("scoreChart").getContext("2d");
+        chartInstance = new Chart(ctx, {
+          type: "pie",
+          data: {
+            labels: ["ঠিক উত্তর", "ভুল উত্তর", "অনুত্তরিত"],
+            datasets: [
+              {
+                data: [0, 0, 0],
+                backgroundColor: ["#34c759", "#ff3b30", "#007aff"],
+                borderColor: "#fff",
+                borderWidth: 2,
+                hoverOffset: 10,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: "10%",
+            layout: {
+              padding: 10,
+            },
+            plugins: {
+              legend: {
+                position: "bottom",
+                labels: {
+                  font: {
+                    family: '"Hind Siliguri", sans-serif',
+                    size: 13,
+                    weight: "bold",
+                  },
+                  color: "#333",
+                  padding: 12,
+                  boxWidth: 14,
+                  generateLabels: (chart) => {
+                    const data = chart.data;
+                    return data.labels.map((label, i) => ({
+                      text: label,
+                      font: {
+                        family: '"Hind Siliguri", sans-serif',
+                      },
+                      fillStyle: data.datasets[0].backgroundColor[i],
+                      hidden: !chart.getDataVisibility(i),
+                      index: i,
+                    }));
+                  },
+                },
+              },
+              tooltip: {
+                backgroundColor: "rgba(0, 0, 0, 0.9)",
+                cornerRadius: 6,
+                titleFont: {
+                  family: '"Hind Siliguri", sans-serif',
+                  size: 14,
+                  weight: "bold",
+                },
+                bodyFont: {
+                  family: '"Hind Siliguri", sans-serif',
+                  size: 13,
+                },
+                padding: 10,
+                boxPadding: 5,
+              },
+            },
+            animation: {
+              animateScale: true,
+              animateRotate: true,
+              duration: 1000,
+              easing: "easeOutQuart",
+            },
+            elements: {
+              arc: {
+                borderRadius: 8,
+              },
+            },
+            onClick: (e, elements) => {
+              if (elements.length > 0) {
+                const index = elements[0].index;
+                const filter = ["correct", "wrong", "unanswered"][index];
+                filterQuestions(filter);
+              } else {
+                filterQuestions("all");
+              }
+            },
+          },
+        });
+        console.log("Chart initialized");
+      }
+
+      function filterQuestions(type) {
+        console.log(`Filtering questions by type: ${type}`);
+        document.querySelectorAll(".question-container").forEach((question) => {
+          const status = question.getAttribute("data-status");
+          if (type === "all" || status === type) {
+            question.style.display = "block";
+          } else {
+            question.style.display = "none";
+          }
+        });
+      }
+
+      function showConfirmPopup() {
+        console.log("Showing confirm popup");
+        document.getElementById("confirmPopup").style.display = "block";
+      }
+
+      function autoSubmitScore() {
+        console.log("Auto-submitting score");
+        stopTimer();
+        let score = 0,
+          total = questions.length,
+          answered = 0,
+          correct = 0,
+          wrong = 0,
+          unanswered = 0;
+
+        document.querySelectorAll(".question-container").forEach((question) => {
+          let correctAnswer = question.getAttribute("data-correct");
+          let selectedOption = question.querySelector(".option.selected");
+
+          if (selectedOption) {
+            answered++;
+            let chosenAnswer = selectedOption.getAttribute("data-option");
+            if (chosenAnswer === correctAnswer) {
+              score += 1;
+              correct++;
+              question.setAttribute("data-status", "correct");
+            } else {
+              score -= 0.25;
+              wrong++;
+              question.setAttribute("data-status", "wrong");
+            }
+          } else {
+            unanswered++;
+            question.setAttribute("data-status", "unanswered");
+          }
+        });
+
+        const userID = sessionStorage.getItem("userID") || "anonymous";
+        const formData = new FormData();
+        formData.append("userID", userID);
+        formData.append("finalScore", score.toFixed(2));
+        formData.append("correctAnswers", correct);
+        formData.append("wrongAnswers", wrong);
+        formData.append("unanswered", unanswered);
+
+        const url = "https://formspree.io/f/xpwy";
+        navigator.sendBeacon(url, formData);
+        console.log("Auto-submission sent via sendBeacon for userID:", userID);
+      }
+
+      function confirmSubmit() {
+        console.log("Confirming submission");
+        document.getElementById("confirmPopup").style.display = "none";
+        stopTimer();
+        let score = 0,
+          total = questions.length,
+          answered = 0,
+          correct = 0,
+          wrong = 0,
+          unanswered = 0;
+
+        document
+          .querySelectorAll(".question-container")
+          .forEach((question, index) => {
+            let correctAnswer = question.getAttribute("data-correct");
+            let selectedOption = question.querySelector(".option.selected");
+
+            if (selectedOption) {
+              answered++;
+              let chosenAnswer = selectedOption.getAttribute("data-option");
+              if (chosenAnswer === correctAnswer) {
+                selectedOption
+                  .querySelector(".option-text")
+                  .classList.add("correct-text");
+                score += 1;
+                correct++;
+                question.setAttribute("data-status", "correct");
+              } else {
+                selectedOption
+                  .querySelector(".option-text")
+                  .classList.add("incorrect-text");
+                question
+                  .querySelector(
+                    `[data-option="${correctAnswer}"] .option-text`
+                  )
+                  .classList.add("correct-text");
+                score -= 0.25;
+                wrong++;
+                question.setAttribute("data-status", "wrong");
+              }
+            } else {
+              question
+                .querySelector(`[data-option="${correctAnswer}"] .option-text`)
+                .classList.add("unattempted-text");
+              unanswered++;
+              question.setAttribute("data-status", "unanswered");
+            }
+            question.style.display = "block";
+
+            const explanationDropdown = question.querySelector(
+              ".explanation-dropdown"
+            );
+            if (explanationDropdown) {
+              explanationDropdown.classList.add("visible");
+            }
+          });
+
+        const chartContainer = document.querySelector(".chart-container");
+        chartContainer.classList.add("visible");
+        if (!chartInstance) {
+          initializeChart();
+        }
+        chartInstance.data.datasets[0].data = [correct, wrong, unanswered];
+        chartInstance.update();
+        console.log("Chart updated with data:", [correct, wrong, unanswered]);
+
+        const userID = sessionStorage.getItem("userID") || "anonymous";
+        document.getElementById("totalQuestions").innerText =
+          toBengaliNumber(total);
+        document.getElementById("answered").innerText =
+          toBengaliNumber(answered);
+        document.getElementById("correctAnswers").innerText =
+          toBengaliNumber(correct);
+        document.getElementById("wrongAnswers").innerText =
+          toBengaliNumber(wrong);
+        document.getElementById("unanswered").innerText =
+          toBengaliNumber(unanswered);
+        document.getElementById("finalScore").innerText = toBengaliNumber(
+          score.toFixed(2)
+        );
+
+        document.getElementById("formUserID").value = userID;
+        document.getElementById("formFinalScore").value = score.toFixed(2);
+        document.getElementById("formCorrectAnswers").value = correct;
+        document.getElementById("formWrongAnswers").value = wrong;
+        document.getElementById("formUnanswered").value = unanswered;
+
+        document.getElementById("submitBtn").style.display = "none";
+
+        document.getElementById("scorePopup").style.display = "block";
+
+        const form = document.getElementById("scoreForm");
+        fetch(form.action, {
+          method: "POST",
+          body: new FormData(form),
+          headers: {
+            Accept: "application/json",
+          },
+        })
+          .then((response) => {
+            if (response.ok) {
+              console.log("Form submitted successfully");
+              form.reset();
+            } else {
+              console.error("Form submission failed:", response.statusText);
+            }
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+          });
+      }
+
+      function cancelSubmit() {
+        console.log("Canceling submission");
+        document.getElementById("confirmPopup").style.display = "none";
+      }
+
+      document
+        .getElementById("submitBtn")
+        .addEventListener("click", function () {
+          console.log("Submit button clicked");
+          showConfirmPopup();
+        });
+
+      function closePopup() {
+        console.log("Closing score popup");
+        const scorePopup = document.getElementById("scorePopup");
+        scorePopup.classList.add("slide-out");
+        setTimeout(() => {
+          scorePopup.style.display = "none";
+          scorePopup.classList.remove("slide-out");
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }, 500);
+      }
+
+      document
+        .getElementById("scoreForm")
+        .addEventListener("submit", function (event) {
+          event.preventDefault();
+          console.log("Score form submitted");
+          closePopup();
+        });
+    </script>
+  </body>
+</html>
